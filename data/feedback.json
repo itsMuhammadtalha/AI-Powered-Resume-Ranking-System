@@ -1,0 +1,12 @@
+{
+    "feedback": [
+        {
+            "text": "Somewhat Relevant",
+            "score": 2
+        },
+        {
+            "text": "Very Relevant",
+            "score": 3
+        }
+    ]
+}
