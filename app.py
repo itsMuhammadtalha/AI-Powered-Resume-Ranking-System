@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 
 # Add the src directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -9,9 +10,78 @@ import pandas as pd
 from src.resume_processor import process_resumes
 import plotly.express as px
 from src.resume_processor import load_candidate_data_from_resumes
+# from src.recommendation_system import recommend_candidates
 from recommendation_system import recommend_candidates
 
+# Function to save feedback to a JSON file
+def save_feedback(feedback):
+    feedback_file = "data/feedback.json"
+    if os.path.exists(feedback_file):
+        with open(feedback_file, 'r') as f:
+            feedback_data = json.load(f)
+    else:
+        feedback_data = {"feedback": []}
+    
+    feedback_data["feedback"].append(feedback)
+    
+    with open(feedback_file, 'w') as f:
+        json.dump(feedback_data, f, indent=4)
+
+# Function to calculate average feedback
+def calculate_average_feedback():
+    feedback_file = "data/feedback.json"
+    if os.path.exists(feedback_file):
+        with open(feedback_file, 'r') as f:
+            feedback_data = json.load(f)
+        if feedback_data["feedback"]:
+            average_feedback = sum(item['score'] for item in feedback_data["feedback"]) / len(feedback_data["feedback"])
+            return average_feedback
+    return None
+
 def main():
+
+    # Sidebar: Feedback Section
+    st.sidebar.subheader("Feedback on Resume Relevance")
+
+    # Select box for rating relevance
+    feedback_option = st.sidebar.selectbox(
+        "How relevant were the CVs overall?",
+        ["Select an Option", "Very Relevant", "Somewhat Relevant", "Not Relevant"]
+    )
+
+    # Button to submit feedback
+    if st.sidebar.button("Submit Feedback"):
+        if feedback_option != "Select an Option":
+            feedback = {
+                "text": feedback_option,
+                "score": {
+                    "Very Relevant": 3,
+                    "Somewhat Relevant": 2,
+                    "Not Relevant": 1
+                }[feedback_option]
+            }
+            save_feedback(feedback)
+            st.sidebar.success("Thank you for your feedback!")
+        else:
+            st.sidebar.warning("Please select a feedback option before submitting.")
+
+
+        # Show the average feedback score
+    average_feedback = calculate_average_feedback()
+    st.sidebar.subheader("Average Feedback Score")
+
+    if average_feedback is not None:
+        # Map numeric scores back to a rough interpretation if you'd like
+        interpretation = (
+            "High Relevance" if average_feedback >= 2.5
+            else "Moderate Relevance" if average_feedback >= 1.5
+            else "Low Relevance"
+        )
+        st.sidebar.write(f"{average_feedback:.2f} out of 3 ({interpretation})")
+    else:
+        st.sidebar.write("No feedback received yet.")           
+
+
     # Sidebar for help and instructions
     st.sidebar.title("Help")
     st.sidebar.markdown("""
@@ -156,6 +226,49 @@ def main():
 
         else:
             st.error("Please upload resumes and provide a job description.")
+
+    # Button to process resumes and recommend candidates
+    if st.button("Recommend Candidates"):
+        st.write("Candidate Data:", candidate_data)
+        st.write("Job Description:", job_description)
+        if candidate_data is not None and not candidate_data.empty and job_description:
+            recommended_candidate = recommend_candidates(candidate_data, candidate_index)
+            st.subheader("Recommended Candidate")
+            st.dataframe(recommended_candidate)
+
+            # Display the name of the top-ranked candidate
+            top_candidate_name = recommended_candidate.iloc[0]['Name']  # Assuming 'Name' is the column for candidate names
+            st.success(f"The top-ranked candidate is: **{top_candidate_name}**")
+
+            # Feedback input in the sidebar
+            st.sidebar.subheader("Feedback Section")
+
+            # Text input for detailed feedback
+            feedback_text = st.sidebar.text_input("Please provide your feedback on the recommendations:")
+
+            # Select options for feedback
+            feedback_options = st.sidebar.selectbox("How relevant were the recommendations?", 
+                                                     ["Select an Option", "Very Relevant", "Somewhat Relevant", "Not Relevant"])
+
+            if st.sidebar.button("Submit Feedback"):
+                if feedback_text or feedback_options != "Select an Option":
+                    feedback = {
+                        "text": feedback_text,
+                        "score": {"Very Relevant": 3, "Somewhat Relevant": 2, "Not Relevant": 1}[feedback_options]
+                    }
+                    save_feedback(feedback)
+                    st.sidebar.success("Thank you for your feedback!")
+                else:
+                    st.sidebar.warning("Please enter some feedback before submitting.")
+
+    # Display average feedback
+    average_feedback = calculate_average_feedback()
+    if average_feedback is not None:
+        st.sidebar.subheader("Average Feedback Score")
+        st.sidebar.write(f"{average_feedback:.2f} out of 3")
+    else:
+        st.sidebar.subheader("Average Feedback Score")
+        st.sidebar.write("No feedback received yet.")
 
 if __name__ == "__main__":
     main()
