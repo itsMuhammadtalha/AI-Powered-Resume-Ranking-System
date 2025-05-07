@@ -120,14 +120,14 @@ def main():
 
     candidate_data = None  # Initialize candidate_data to None
 
-    if st.button("Load Candidates"):
-        if uploaded_files:
-            # Load candidate data from uploaded resumes
-            candidate_data = load_candidate_data_from_resumes(uploaded_files)
-            st.subheader("Candidate Profiles")
-            st.dataframe(candidate_data)
-        else:
-            st.error("Please upload at least one resume.")
+    # if st.button("Load Candidates"):
+    #     if uploaded_files:
+    #         # Load candidate data from uploaded resumes
+    #         candidate_data = load_candidate_data_from_resumes(uploaded_files)
+    #         st.subheader("Candidate Profiles")
+    #         st.dataframe(candidate_data)
+    #     else:
+    #         st.error("Please upload at least one resume.")
 
     # Button to process resumes
     if st.button("Rank Resumes"):
